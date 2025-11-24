@@ -7,31 +7,24 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04  # 使用更旧的Ubuntu版本，更稳定
+    runs-on: ubuntu-20.04
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Build using Python-for-Android directly
+    - name: Build using Python-for-Android
       run: |
-        # 设置环境
         sudo apt-get update
         sudo apt-get install -y python3-pip python3-venv openjdk-8-jdk git zip unzip
-        
-        # 创建虚拟环境
         python3 -m venv venv
         source venv/bin/activate
-        
-        # 安装python-for-android
         pip install python-for-android
-        
-        # 直接构建APK
         p4a apk --requirements=python3,kivy --private . --package=org.yourname.yuepao --name="月抛大作战" --version=1.0 --bootstrap=sdl2 --orientation=portrait
       
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: 月抛大作战-APK
-        path: *.apk  # p4a 生成的APK在根目录
+        path: *.apk
         if-no-files-found: ignore
