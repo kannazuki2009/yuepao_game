@@ -7,24 +7,25 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Build using Python-for-Android
+    - name: Setup environment
       run: |
         sudo apt-get update
         sudo apt-get install -y python3-pip python3-venv openjdk-8-jdk git zip unzip
-        python3 -m venv venv
-        source venv/bin/activate
-        pip install python-for-android
-        p4a apk --requirements=python3,kivy --private . --package=org.yourname.yuepao --name="月抛大作战" --version=1.0 --bootstrap=sdl2 --orientation=portrait
+        pip3 install buildozer
+        
+    - name: Build APK
+      run: |
+        buildozer -v android debug
       
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: 月抛大作战-APK
-        path: *.apk
+        path: bin/*.apk
         if-no-files-found: ignore
