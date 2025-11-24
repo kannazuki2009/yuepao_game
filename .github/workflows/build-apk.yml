@@ -13,24 +13,18 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.8'
-        
-    - name: Install system dependencies
+    - name: Setup environment
       run: |
         sudo apt-get update
-        sudo apt-get install -y python3-pip python3-venv build-essential git zip unzip openjdk-8-jdk
+        sudo apt-get install -y python3-pip python3-venv openjdk-8-jdk git zip unzip
+        pip3 install buildozer cython==0.29.19 kivy
         
-    - name: Install Python dependencies
+    - name: Build with single process
       run: |
-        pip install --upgrade pip
-        pip install buildozer cython==0.29.33 kivy
-      
-    - name: Build APK
-      run: |
-        buildozer -v android debug
+        # 设置环境变量避免并发问题
+        export PYTHONOPTIMIZE=1
+        # 使用单进程构建
+        buildozer -v android debug --jobs 1
       
     - name: Upload APK
       uses: actions/upload-artifact@v4
