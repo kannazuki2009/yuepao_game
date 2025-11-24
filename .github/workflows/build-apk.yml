@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # 明确指定 Ubuntu 版本
     
     steps:
     - name: Checkout code
@@ -33,13 +33,14 @@ jobs:
           zlib1g-dev \
           libncurses5-dev \
           libncursesw5-dev \
-          libtinfo5 \
           cmake \
           libffi-dev \
           libssl-dev \
           libxml2-dev \
           libxslt1-dev \
           python3-venv
+        # 尝试安装 libtinfo5 或替代包
+        sudo apt-get install -y libtinfo5 || sudo apt-get install -y libtinfo6 || echo "libtinfo not available, continuing without it"
 
     - name: Install Android SDK and Build Tools
       run: |
