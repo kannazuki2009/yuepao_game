@@ -12,6 +12,13 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Debug - List project files
+      run: |
+        echo "=== Project Structure ==="
+        find . -type f -name "*.py" | head -20
+        echo "=== Directory Contents ==="
+        ls -la
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
@@ -40,79 +47,72 @@ jobs:
           libxslt1-dev \
           python3-venv
 
-    - name: Install Android SDK and Build Tools
-      run: |
-        # 下载 Android 命令行工具
-        wget -q https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip
-        mkdir -p android-sdk/cmdline-tools/latest
-        unzip -q commandlinetools-linux-8512546_latest.zip -d android-sdk/cmdline-tools/latest/
-        # 移动文件到正确位置
-        mv android-sdk/cmdline-tools/latest/cmdline-tools/* android-sdk/cmdline-tools/latest/
-        rm -rf android-sdk/cmdline-tools/latest/cmdline-tools
-        
-        echo "ANDROID_SDK_ROOT=$GITHUB_WORKSPACE/android-sdk" >> $GITHUB_ENV
-        echo "$GITHUB_WORKSPACE/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
-        echo "$GITHUB_WORKSPACE/android-sdk/platform-tools" >> $GITHUB_PATH
-        
-        # 接受许可证并安装必要的包
-        yes | android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$GITHUB_WORKSPACE/android-sdk --licenses
-        android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$GITHUB_WORKSPACE/android-sdk \
-          "platform-tools" "platforms;android-29" "build-tools;29.0.3"
-
-    - name: Create and use Python virtual environment
+    - name: Install Buildozer and Kivy dependencies
       run: |
         python3 -m venv venv
         source venv/bin/activate
         pip install --upgrade pip wheel setuptools
-
-    - name: Install Buildozer and Kivy dependencies
-      run: |
-        source venv/bin/activate
         pip install buildozer
         pip install cython==0.29.19
         pip install kivy[base]
 
-    - name: Initialize Buildozer if needed
+    - name: Create basic buildozer.spec
       run: |
         source venv/bin/activate
         if [ ! -f buildozer.spec ]; then
           buildozer init
         fi
+        # 确保配置正确
+        echo "[app]
+title = My Kivy App
+package.name = mykivyapp
+package.domain = org.example
+source.dir = .
+source.include_exts = py,png,jpg,kv,atlas,txt
+version = 0.1
+requirements = python3,kivy,android
+orientation = portrait
 
-    - name: Create optimized buildozer.spec for Kivy
-      run: |
-        source venv/bin/activate
-        echo "[app]" > buildozer.spec
-        echo "title = My Kivy App" >> buildozer.spec
-        echo "package.name = mykivyapp" >> buildozer.spec
-        echo "package.domain = org.example" >> buildozer.spec
-        echo "source.dir = ." >> buildozer.spec
-        echo "source.include_exts = py,png,jpg,kv,atlas,txt" >> buildozer.spec
-        echo "version = 0.1" >> buildozer.spec
-        echo "requirements = python3,kivy,android" >> buildozer.spec
-        echo "orientation = portrait" >> buildozer.spec
-        echo "fullscreen = 0" >> buildozer.spec
-        echo "" >> buildozer.spec
-        echo "[buildozer]" >> buildozer.spec
-        echo "log_level = 2" >> buildozer.spec
-        echo "warn_on_root = 1" >> buildozer.spec
+[buildozer]
+log_level = 2
+warn_on_root = 1" > buildozer.spec
 
-    - name: Display buildozer.spec for verification
+    - name: Debug - Show buildozer.spec
       run: cat buildozer.spec
+
+    - name: Create main.py if missing
+      run: |
+        if [ ! -f main.py ]; then
+          echo "Creating basic main.py for testing"
+          cat > main.py << 'MAINPY'
+import kivy
+from kivy.app import App
+from kivy.uix.label import Label
+
+class MyApp(App):
+    def build(self):
+        return Label(text='Hello Kivy!')
+
+if __name__ == '__main__':
+    MyApp().run()
+MAINPY
+        fi
 
     - name: Build APK with detailed logging
       run: |
         source venv/bin/activate
-        buildozer -v android debug 2>&1 | tee build.log || true
+        echo "=== Starting Buildozer ==="
+        buildozer -v android debug 2>&1 | tee build.log
+        echo "=== Buildozer finished ==="
 
-    - name: Check if build.log exists and upload
+    - name: Debug - Check for APK and other files
       run: |
-        if [ -f build.log ]; then
-          echo "Build log exists, will upload"
-        else
-          echo "No build.log found, creating one with error info"
-          echo "Build failed before log creation" > build.log
-        fi
+        echo "=== Checking for APK files ==="
+        find . -name "*.apk" -type f
+        echo "=== Checking bin directory ==="
+        ls -la bin/ 2>/dev/null || echo "bin directory does not exist"
+        echo "=== Checking buildozer directories ==="
+        ls -la .buildozer/ 2>/dev/null || echo ".buildozer directory does not exist"
 
     - name: Upload build log
       uses: actions/upload-artifact@v4
@@ -122,11 +122,10 @@ jobs:
         retention-days: 30
         if-no-files-found: warn
 
-    - name: Upload APK artifact (on success)
-      if: success()
+    - name: Upload APK if exists
       uses: actions/upload-artifact@v4
       with:
         name: kivy-android-app
         path: bin/*.apk
         retention-days: 30
-        if-no-files-found: warn
+        if-no-files-found: ignore
