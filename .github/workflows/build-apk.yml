@@ -43,7 +43,7 @@ jobs:
       
     - name: Build APK with Buildozer
       run: |
-        buildozer init
+        # 跳过初始化，直接构建
         buildozer -v android debug
       
     - name: Upload APK
