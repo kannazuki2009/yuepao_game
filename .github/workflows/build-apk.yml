@@ -1,119 +1,19 @@
-name: Build Kivy Android APK
-
-on:
-  push:
-    branches: [ main ]
-
+name: Build APK
+on: [push]
 jobs:
   build:
-    runs-on: ubuntu-22.04
-    
+    runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Install all system dependencies
+    - uses: actions/checkout@v4
+    - name: Install buildozer
+      run: pip install buildozer
+    - name: Init and build
       run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          python3-pip \
-          python3-venv \
-          build-essential \
-          git \
-          zip \
-          unzip \
-          openjdk-8-jdk \
-          autoconf \
-          libtool \
-          pkg-config \
-          zlib1g-dev \
-          libncurses5-dev \
-          libncursesw5-dev \
-          cmake \
-          libffi-dev \
-          libssl-dev \
-          libxml2-dev \
-          libxslt1-dev \
-          curl \
-          wget
-
-    - name: Setup Android SDK
-      run: |
-        wget -q https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip
-        mkdir -p android-sdk/cmdline-tools/latest
-        unzip -q commandlinetools-linux-8512546_latest.zip -d android-sdk/cmdline-tools/latest/
-        mv android-sdk/cmdline-tools/latest/cmdline-tools/* android-sdk/cmdline-tools/latest/
-        rm -rf android-sdk/cmdline-tools/latest/cmdline-tools
-        
-        echo "ANDROID_SDK_ROOT=$GITHUB_WORKSPACE/android-sdk" >> $GITHUB_ENV
-        echo "$GITHUB_WORKSPACE/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
-        
-        yes | android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$GITHUB_WORKSPACE/android-sdk --licenses
-        android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$GITHUB_WORKSPACE/android-sdk \
-          "platform-tools" "platforms;android-29" "build-tools;29.0.3" "ndk;21.4.7075529"
-
-    - name: Install Python dependencies
-      run: |
-        python3 -m venv venv
-        source venv/bin/activate
-        pip install --upgrade pip wheel setuptools
-        pip install buildozer
-        pip install cython==0.29.19
-        pip install kivy[base]
-
-    - name: Create buildozer.spec
-      run: |
-        source venv/bin/activate
-        if [ ! -f buildozer.spec ]; then
-          buildozer init
-        fi
-        
-        echo "[app]
-title = My Kivy App
-package.name = mykivyapp
-package.domain = org.example
-source.dir = .
-source.include_exts = py,png,jpg,kv,atlas,txt
-version = 0.1
-requirements = python3,kivy,android
-orientation = portrait
-fullscreen = 0
-
-[buildozer]
-log_level = 2
-warn_on_root = 1" > buildozer.spec
-
-    - name: Create main.py if missing
-      run: |
-        if [ ! -f main.py ]; then
-          echo "import kivy
-from kivy.app import App
-from kivy.uix.label import Label
-
-class MyApp(App):
-    def build(self):
-        return Label(text='Hello Kivy!')
-
-if __name__ == '__main__':
-    MyApp().run()" > main.py
-        fi
-
-    - name: Build APK
-      run: |
-        source venv/bin/activate
-        buildozer -v android debug
-
+        buildozer init
+        buildozer android debug
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: kivy-android-app
+        name: app
         path: bin/*.apk
-        retention-days: 30
-
-    - name: Upload build log
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-log
-        path: .buildozer/**/*.log
-        retention-days: 30
+        if-no-files-found: ignore
