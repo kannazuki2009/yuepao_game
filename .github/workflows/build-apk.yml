@@ -3,8 +3,6 @@ name: Build Kivy Android APK
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
   build:
@@ -17,8 +15,8 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.9'
-        
+        python-version: '3.8'  # 使用 3.8 而不是 3.9，兼容性更好
+
     - name: Install system dependencies
       run: |
         sudo apt-get update
@@ -28,7 +26,7 @@ jobs:
           git \
           zip \
           unzip \
-          openjdk-11-jdk \
+          openjdk-8-jdk \  # 使用 JDK 8，Android 构建更兼容
           autoconf \
           libtool \
           pkg-config \
@@ -40,7 +38,8 @@ jobs:
           libffi-dev \
           libssl-dev \
           libxml2-dev \
-          libxslt1-dev
+          libxslt1-dev \
+          python3-venv
 
     - name: Install Android SDK and Build Tools
       run: |
@@ -54,42 +53,67 @@ jobs:
         echo "$GITHUB_WORKSPACE/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
         echo "$GITHUB_WORKSPACE/android-sdk/platform-tools" >> $GITHUB_PATH
         
+        # 安装更稳定的 Android 版本
         yes | android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$GITHUB_WORKSPACE/android-sdk \
-          "platform-tools" "platforms;android-33" "build-tools;33.0.0"
+          "platform-tools" "platforms;android-29" "build-tools;29.0.3"
 
-    - name: Install Buildozer and dependencies
+    - name: Create and use Python virtual environment
       run: |
-        pip install --upgrade pip
-        pip install buildozer cython==0.29.33 kivy
+        python3 -m venv venv
+        source venv/bin/activate
+        pip install --upgrade pip wheel setuptools
 
-    - name: Generate buildozer.spec for Kivy
+    - name: Install Buildozer and Kivy dependencies
       run: |
+        source venv/bin/activate
+        pip install buildozer
+        pip install cython==0.29.19  # 使用更稳定的 Cython 版本
+        pip install kivy[base] kivy_examples
+
+    - name: Initialize Buildozer with optimized config
+      run: |
+        source venv/bin/activate
         if [ ! -f buildozer.spec ]; then
           buildozer init
-          # 为 Kivy 应用优化配置
-          sed -i 's/^title = My Application/title = Your Kivy App/' buildozer.spec
-          sed -i 's/^package.name = myapp/package.name = yourkivyapp/' buildozer.spec
-          sed -i 's/^package.domain = org.example/package.domain = org.yourname/' buildozer.spec
-          sed -i 's/^requirements = python3,kivy/requirements = python3,kivy,android/' buildozer.spec
-          sed -i 's/^version = 0.1/version = 1.0/' buildozer.spec
-          # 设置 Kivy 特定的配置
-          echo "android.permissions = INTERNET" >> buildozer.spec
-          echo "fullscreen = 0" >> buildozer.spec
-        else
-          # 确保现有的 spec 文件包含 kivy 依赖
-          if ! grep -q "requirements =.*kivy" buildozer.spec; then
-            sed -i 's/requirements = .*/&,kivy,android/' buildozer.spec
-          fi
         fi
+        
+        # 创建优化的 buildozer.spec
+        cat > buildozer.spec << EOF
+[app]
+title = My Kivy App
+package.name = mykivyapp
+package.domain = org.example
+source.dir = .
+source.include_exts = py,png,jpg,kv,atlas,txt
+version = 0.1
+requirements = python3==3.8.5,kivy==2.0.0,android
+orientation = portrait
+fullscreen = 0
 
-    - name: Display buildozer.spec for verification
-      run: cat buildozer.spec
+[buildozer]
+log_level = 2
+warn_on_root = 1
 
-    - name: Build APK with Buildozer
+[app]
+presplash.filename = %(source.dir)s/presplash.png
+icon.filename = %(source.dir)s/icon.png
+EOF
+
+    - name: Build APK with detailed logging
       run: |
-        buildozer -v android debug
+        source venv/bin/activate
+        buildozer -v android debug 2>&1 | tee build.log
 
-    - name: Upload APK artifact
+    - name: Upload build log (on failure)
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-log
+        path: build.log
+        retention-days: 30
+
+    - name: Upload APK artifact (on success)
+      if: success()
       uses: actions/upload-artifact@v4
       with:
         name: kivy-android-app
