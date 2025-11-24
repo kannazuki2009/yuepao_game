@@ -1,0 +1,58 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.8'
+        
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          git zip unzip openjdk-8-jdk \
+          autoconf libtool pkg-config \
+          zlib1g-dev libncurses5-dev \
+          cmake libffi-dev libssl-dev \
+          python3-pip
+          
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install buildozer cython
+        
+    - name: Initialize Buildozer
+      run: |
+        buildozer init
+        
+    - name: Configure Buildozer
+      run: |
+        sed -i 's/^title = .*/title = 月抛大作战/' buildozer.spec
+        sed -i 's/^package.name = .*/package.name = yuepao/' buildozer.spec
+        sed -i 's/^package.domain = .*/package.domain = org.yuepao/' buildozer.spec
+        sed -i 's/^requirements = .*/requirements = python3,kivy,sdl2_ttf,sdl2_image,sdl2_mixer/' buildozer.spec
+        sed -i 's/^source.include_exts = .*/source.include_exts = py,png,jpg,kv,atlas,txt/' buildozer.spec
+        
+    - name: Build APK
+      run: |
+        buildozer -v android debug
+        
+    - name: Upload APK
+      uses: actions/upload-artifact@v3
+      with:
+        name: yuepao-apk
+        path: bin/*.apk
+        retention-days: 30
