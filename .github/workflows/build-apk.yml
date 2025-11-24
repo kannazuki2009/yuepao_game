@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04  # 明确指定 Ubuntu 版本
+    runs-on: ubuntu-22.04
     
     steps:
     - name: Checkout code
@@ -39,22 +39,24 @@ jobs:
           libxml2-dev \
           libxslt1-dev \
           python3-venv
-        # 尝试安装 libtinfo5 或替代包
-        sudo apt-get install -y libtinfo5 || sudo apt-get install -y libtinfo6 || echo "libtinfo not available, continuing without it"
 
     - name: Install Android SDK and Build Tools
       run: |
+        # 下载 Android 命令行工具
         wget -q https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip
-        mkdir -p android-sdk
-        unzip -q commandlinetools-linux-8512546_latest.zip -d android-sdk
         mkdir -p android-sdk/cmdline-tools/latest
-        mv android-sdk/cmdline-tools/* android-sdk/cmdline-tools/latest/
+        unzip -q commandlinetools-linux-8512546_latest.zip -d android-sdk/cmdline-tools/latest/
+        # 移动文件到正确位置
+        mv android-sdk/cmdline-tools/latest/cmdline-tools/* android-sdk/cmdline-tools/latest/
+        rm -rf android-sdk/cmdline-tools/latest/cmdline-tools
         
         echo "ANDROID_SDK_ROOT=$GITHUB_WORKSPACE/android-sdk" >> $GITHUB_ENV
         echo "$GITHUB_WORKSPACE/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
         echo "$GITHUB_WORKSPACE/android-sdk/platform-tools" >> $GITHUB_PATH
         
-        yes | android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$GITHUB_WORKSPACE/android-sdk \
+        # 接受许可证并安装必要的包
+        yes | android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$GITHUB_WORKSPACE/android-sdk --licenses
+        android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$GITHUB_WORKSPACE/android-sdk \
           "platform-tools" "platforms;android-29" "build-tools;29.0.3"
 
     - name: Create and use Python virtual environment
@@ -80,7 +82,6 @@ jobs:
     - name: Create optimized buildozer.spec for Kivy
       run: |
         source venv/bin/activate
-        # 使用最简单的 echo 命令逐行创建
         echo "[app]" > buildozer.spec
         echo "title = My Kivy App" >> buildozer.spec
         echo "package.name = mykivyapp" >> buildozer.spec
