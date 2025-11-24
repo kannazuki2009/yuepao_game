@@ -15,7 +15,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.8'  # 使用 3.8 而不是 3.9，兼容性更好
+        python-version: '3.8'
 
     - name: Install system dependencies
       run: |
@@ -26,7 +26,7 @@ jobs:
           git \
           zip \
           unzip \
-          openjdk-8-jdk \  # 使用 JDK 8，Android 构建更兼容
+          openjdk-8-jdk \
           autoconf \
           libtool \
           pkg-config \
@@ -53,7 +53,6 @@ jobs:
         echo "$GITHUB_WORKSPACE/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
         echo "$GITHUB_WORKSPACE/android-sdk/platform-tools" >> $GITHUB_PATH
         
-        # 安装更稳定的 Android 版本
         yes | android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$GITHUB_WORKSPACE/android-sdk \
           "platform-tools" "platforms;android-29" "build-tools;29.0.3"
 
@@ -67,37 +66,24 @@ jobs:
       run: |
         source venv/bin/activate
         pip install buildozer
-        pip install cython==0.29.19  # 使用更稳定的 Cython 版本
-        pip install kivy[base] kivy_examples
+        pip install cython==0.29.19
+        pip install kivy[base]
 
-    - name: Initialize Buildozer with optimized config
+    - name: Initialize Buildozer if needed
       run: |
         source venv/bin/activate
         if [ ! -f buildozer.spec ]; then
           buildozer init
         fi
-        
-        # 创建优化的 buildozer.spec
-        cat > buildozer.spec << EOF
-[app]
-title = My Kivy App
-package.name = mykivyapp
-package.domain = org.example
-source.dir = .
-source.include_exts = py,png,jpg,kv,atlas,txt
-version = 0.1
-requirements = python3==3.8.5,kivy==2.0.0,android
-orientation = portrait
-fullscreen = 0
 
-[buildozer]
-log_level = 2
-warn_on_root = 1
+    - name: Create optimized buildozer.spec for Kivy
+      run: |
+        source venv/bin/activate
+        # 使用单个 echo 命令和换行符创建 spec 文件
+        echo -e "[app]\ntitle = My Kivy App\npackage.name = mykivyapp\npackage.domain = org.example\nsource.dir = .\nsource.include_exts = py,png,jpg,kv,atlas,txt\nversion = 0.1\nrequirements = python3,kivy,android\norientation = portrait\nfullscreen = 0\n\n[buildozer]\nlog_level = 2\nwarn_on_root = 1\n\n[app]\npresplash.filename = %(source.dir)s/presplash.png\nicon.filename = %(source.dir)s/icon.png" > buildozer.spec
 
-[app]
-presplash.filename = %(source.dir)s/presplash.png
-icon.filename = %(source.dir)s/icon.png
-EOF
+    - name: Display buildozer.spec for verification
+      run: cat buildozer.spec
 
     - name: Build APK with detailed logging
       run: |
