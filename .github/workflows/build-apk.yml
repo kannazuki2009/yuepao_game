@@ -1,16 +1,19 @@
-name: Build APK
+name: Build Kivy APK
 on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Install buildozer
-      run: pip install buildozer
-    - name: Init and build
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y python3-pip python3-venv openjdk-8-jdk git zip unzip
+        pip3 install buildozer cython kivy
+    - name: Build APK
       run: |
         buildozer init
-        buildozer android debug
+        buildozer -v android debug
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
