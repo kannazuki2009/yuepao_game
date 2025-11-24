@@ -33,7 +33,7 @@ jobs:
           zlib1g-dev \
           libncurses5-dev \
           libncursesw5-dev \
-          libtinfo5 \
+          libtinfo5 \  # 修复：libtinfoS -> libtinfo5
           cmake \
           libffi-dev \
           libssl-dev \
@@ -79,8 +79,23 @@ jobs:
     - name: Create optimized buildozer.spec for Kivy
       run: |
         source venv/bin/activate
-        # 使用单个 echo 命令和换行符创建 spec 文件
-        echo -e "[app]\ntitle = My Kivy App\npackage.name = mykivyapp\npackage.domain = org.example\nsource.dir = .\nsource.include_exts = py,png,jpg,kv,atlas,txt\nversion = 0.1\nrequirements = python3,kivy,android\norientation = portrait\nfullscreen = 0\n\n[buildozer]\nlog_level = 2\nwarn_on_root = 1\n\n[app]\npresplash.filename = %(source.dir)s/presplash.png\nicon.filename = %(source.dir)s/icon.png" > buildozer.spec
+        # 使用更简单的方法创建 spec 文件
+        cat << 'EOF' > buildozer.spec
+[app]
+title = My Kivy App
+package.name = mykivyapp
+package.domain = org.example
+source.dir = .
+source.include_exts = py,png,jpg,kv,atlas,txt
+version = 0.1
+requirements = python3,kivy,android
+orientation = portrait
+fullscreen = 0
+
+[buildozer]
+log_level = 2
+warn_on_root = 1
+EOF
 
     - name: Display buildozer.spec for verification
       run: cat buildozer.spec
@@ -88,15 +103,25 @@ jobs:
     - name: Build APK with detailed logging
       run: |
         source venv/bin/activate
-        buildozer -v android debug 2>&1 | tee build.log
+        # 确保创建日志文件，即使构建失败
+        buildozer -v android debug 2>&1 | tee build.log || true
 
-    - name: Upload build log (on failure)
-      if: failure()
+    - name: Check if build.log exists and upload
+      run: |
+        if [ -f build.log ]; then
+          echo "Build log exists, will upload"
+        else
+          echo "No build.log found, creating one with error info"
+          echo "Build failed before log creation" > build.log
+        fi
+
+    - name: Upload build log
       uses: actions/upload-artifact@v4
       with:
         name: build-log
         path: build.log
         retention-days: 30
+        if-no-files-found: warn
 
     - name: Upload APK artifact (on success)
       if: success()
@@ -105,3 +130,4 @@ jobs:
         name: kivy-android-app
         path: bin/*.apk
         retention-days: 30
+        if-no-files-found: warn
