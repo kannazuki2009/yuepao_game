@@ -7,73 +7,31 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04  # 使用更旧的Ubuntu版本，更稳定
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.8'
-        
-    - name: Install system dependencies
+    - name: Build using Python-for-Android directly
       run: |
+        # 设置环境
         sudo apt-get update
-        sudo apt-get install -y \
-          python3-pip \
-          build-essential \
-          git \
-          zip \
-          unzip \
-          openjdk-8-jdk \
-          autoconf \
-          libtool \
-          pkg-config \
-          zlib1g-dev \
-          libncurses5-dev \
-          libncursesw5-dev \
-          cmake \
-          libffi-dev \
-          libssl-dev \
-          wget
-          
-    - name: Install Buildozer
-      run: pip install buildozer cython==0.29.19 kivy
-      
-    - name: Setup Android SDK manually
-      run: |
-        # 下载并设置Android命令行工具
-        wget -q https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip
-        mkdir -p android-sdk
-        unzip -q commandlinetools-linux-8512546_latest.zip -d android-sdk
+        sudo apt-get install -y python3-pip python3-venv openjdk-8-jdk git zip unzip
         
-        # 设置环境变量
-        echo "ANDROID_SDK_ROOT=$PWD/android-sdk" >> $GITHUB_ENV
-        echo "PATH=$PWD/android-sdk/cmdline-tools/bin:$PATH" >> $GITHUB_ENV
+        # 创建虚拟环境
+        python3 -m venv venv
+        source venv/bin/activate
         
-        # 接受许可证并安装必要的包
-        yes | android-sdk/cmdline-tools/bin/sdkmanager --sdk_root=$PWD/android-sdk --licenses
-        android-sdk/cmdline-tools/bin/sdkmanager --sdk_root=$PWD/android-sdk \
-          "platform-tools" "platforms;android-33" "build-tools;33.0.0" "ndk;25.1.8937393"
-      
-    - name: Build APK
-      run: |
-        buildozer -v android debug
+        # 安装python-for-android
+        pip install python-for-android
+        
+        # 直接构建APK
+        p4a apk --requirements=python3,kivy --private . --package=org.yourname.yuepao --name="月抛大作战" --version=1.0 --bootstrap=sdl2 --orientation=portrait
       
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: 月抛大作战-APK
-        path: bin/*.apk
-        retention-days: 30
+        path: *.apk  # p4a 生成的APK在根目录
         if-no-files-found: ignore
-        
-    - name: Upload build log if failed
-      if: failure()
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-logs
-        path: .buildozer/**/*.log
-        retention-days: 30
