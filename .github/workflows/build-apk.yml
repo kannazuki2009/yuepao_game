@@ -1,22 +1,27 @@
-name: Build Kivy APK
-on: [push]
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # 允许手动触发
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    
     steps:
-    - uses: actions/checkout@v4
-    - name: Install dependencies
-      run: |
-        sudo apt update
-        sudo apt install -y python3-pip python3-venv openjdk-8-jdk git zip unzip
-        pip3 install buildozer cython kivy
-    - name: Build APK
-      run: |
-        buildozer init
-        buildozer -v android debug
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Build with Buildozer
+      uses: artem-solopov/buildozer-action@v1
+      with:
+        work-dir: .  # 项目根目录
+        buildozer-version: stable
+        
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: app
+        name: 月抛大作战-APK
         path: bin/*.apk
-        if-no-files-found: ignore
+        retention-days: 30
