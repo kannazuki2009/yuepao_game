@@ -33,7 +33,7 @@ jobs:
           zlib1g-dev \
           libncurses5-dev \
           libncursesw5-dev \
-          libtinfo5 \  # 修复：libtinfoS -> libtinfo5
+          libtinfo5 \
           cmake \
           libffi-dev \
           libssl-dev \
@@ -79,23 +79,21 @@ jobs:
     - name: Create optimized buildozer.spec for Kivy
       run: |
         source venv/bin/activate
-        # 使用更简单的方法创建 spec 文件
-        cat << 'EOF' > buildozer.spec
-[app]
-title = My Kivy App
-package.name = mykivyapp
-package.domain = org.example
-source.dir = .
-source.include_exts = py,png,jpg,kv,atlas,txt
-version = 0.1
-requirements = python3,kivy,android
-orientation = portrait
-fullscreen = 0
-
-[buildozer]
-log_level = 2
-warn_on_root = 1
-EOF
+        # 使用最简单的 echo 命令逐行创建
+        echo "[app]" > buildozer.spec
+        echo "title = My Kivy App" >> buildozer.spec
+        echo "package.name = mykivyapp" >> buildozer.spec
+        echo "package.domain = org.example" >> buildozer.spec
+        echo "source.dir = ." >> buildozer.spec
+        echo "source.include_exts = py,png,jpg,kv,atlas,txt" >> buildozer.spec
+        echo "version = 0.1" >> buildozer.spec
+        echo "requirements = python3,kivy,android" >> buildozer.spec
+        echo "orientation = portrait" >> buildozer.spec
+        echo "fullscreen = 0" >> buildozer.spec
+        echo "" >> buildozer.spec
+        echo "[buildozer]" >> buildozer.spec
+        echo "log_level = 2" >> buildozer.spec
+        echo "warn_on_root = 1" >> buildozer.spec
 
     - name: Display buildozer.spec for verification
       run: cat buildozer.spec
@@ -103,7 +101,6 @@ EOF
     - name: Build APK with detailed logging
       run: |
         source venv/bin/activate
-        # 确保创建日志文件，即使构建失败
         buildozer -v android debug 2>&1 | tee build.log || true
 
     - name: Check if build.log exists and upload
