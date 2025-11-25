@@ -8,12 +8,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Build with Kivy-Buildozer
-      uses: kivy/buildozer-action@v1
+    - name: Build APK with Buildozer
+      uses: jhsu98m/buildozer-action@v1
       with:
         workdir: '.'
-        buildozer_version: 'stable'
-        target: 'android debug'
         
     - name: Upload APK
       uses: actions/upload-artifact@v4
