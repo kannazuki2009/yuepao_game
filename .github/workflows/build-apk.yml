@@ -5,72 +5,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Build with Kivy-Buildozer
+      uses: kivy/buildozer-action@v1
       with:
-        python-version: '3.9'
-        
-    - name: Install ALL system dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          build-essential \
-          git \
-          python3-pip \
-          openjdk-11-jdk \
-          zip \
-          unzip \
-          wget \
-          libncurses5-dev \
-          zlib1g-dev \
-          libffi-dev \
-          libssl-dev \
-          python3-dev \
-          autoconf \
-          automake \
-          libtool \
-          pkg-config \
-          cmake
-        
-    - name: Install Android SDK and NDK
-      run: |
-        # 创建Android SDK目录
-        mkdir -p android-sdk
-        cd android-sdk
-        
-        # 下载命令行工具
-        wget -q https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip
-        unzip -q commandlinetools-linux-8512546_latest.zip
-        
-        # 设置正确的目录结构
-        mkdir -p cmdline-tools/latest
-        mv cmdline-tools/* cmdline-tools/latest/ || true
-        
-        # 设置环境变量
-        export ANDROID_HOME=$PWD
-        export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
-        
-        # 接受许可证
-        yes | sdkmanager --licenses || true
-        
-        # 安装必要的Android组件
-        sdkmanager "platforms;android-30" "build-tools;30.0.3" "platform-tools"
-        
-        # 设置环境变量供后续步骤使用
-        echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
-        echo "PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$PATH" >> $GITHUB_ENV
-        
-        cd ..
-        
-    - name: Install Buildozer and Python dependencies
-      run: |
-        pip install buildozer cython==0.29.33 kivy
-        
-    - name: Build APK with Buildozer
-      run: |
-        buildozer -v android debug
+        workdir: '.'
+        buildozer_version: 'stable'
+        target: 'android debug'
         
     - name: Upload APK
       uses: actions/upload-artifact@v4
