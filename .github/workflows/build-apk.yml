@@ -5,11 +5,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Install and build
+    - name: Install everything
       run: |
         sudo apt update
-        sudo apt install -y python3-pip openjdk-8-jdk
+        sudo apt install -y python3-pip python3-venv openjdk-8-jdk
+        pip3 install --upgrade pip
+        pip3 install cython
         pip3 install buildozer
+    - name: Build APK
+      run: |
         buildozer init
         buildozer android debug
     - name: Upload APK
