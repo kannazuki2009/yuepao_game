@@ -14,8 +14,6 @@ orientation = portrait
 android.permissions = INTERNET
 android.api = 30
 android.minapi = 21
-android.sdk = 20
-android.ndk = 23b
 
 [buildozer]
 log_level = 2

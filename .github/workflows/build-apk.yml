@@ -3,7 +3,7 @@ on: [push]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04  # 使用更稳定的Ubuntu版本
     
     steps:
     - name: Checkout code
@@ -14,39 +14,24 @@ jobs:
       with:
         python-version: '3.9'
         
-    - name: Install ALL possible dependencies
+    - name: Install comprehensive dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y \
-          build-essential \
-          git \
-          python3-pip \
-          python3-dev \
-          openjdk-11-jdk \
-          openjdk-17-jdk \
-          zip \
-          unzip \
-          wget \
-          curl \
-          libncurses5 \
-          libncurses5-dev \
-          libncurses6 \
-          libncurses6-dev \
-          zlib1g-dev \
-          libffi-dev \
-          libssl-dev \
-          autoconf \
-          automake \
-          libtool \
-          pkg-config \
-          cmake \
-          ninja-build \
-          gcc-multilib \
-          g++-multilib \
-          libstdc++6 \
-          lib32stdc++6 \
-          lib32z1 \
-          lib32z1-dev
+        # 基础构建工具
+        sudo apt-get install -y build-essential git python3-pip python3-dev
+        # Java
+        sudo apt-get install -y openjdk-11-jdk
+        # 压缩工具
+        sudo apt-get install -y zip unzip wget curl
+        # 库依赖 - 使用可用的包名
+        sudo apt-get install -y libncurses* zlib1g-dev libffi-dev libssl-dev
+        sudo apt-get install -y autoconf automake libtool pkg-config cmake
+        # 32位支持
+        sudo apt-get install -y gcc-multilib g++-multilib
+        # 尝试安装其他可能的包
+        sudo apt-get install -y libc6-dev-i386 libstdc++6 libstdc++-10-dev
+        # 尝试安装Android构建可能需要的包
+        sudo apt-get install -y lib32z1 lib32stdc++6
           
     - name: Install Python packages
       run: |
@@ -55,21 +40,9 @@ jobs:
         pip install Cython==0.29.33
         pip install kivy[full]
         
-    - name: Setup Android SDK and NDK
+    - name: Build APK with Buildozer
       run: |
-        # 让Buildozer自己处理Android SDK和NDK的下载
-        # 我们只设置必要的环境变量
-        mkdir -p ~/.buildozer/android/platform/
-        echo "我们将让Buildozer自动下载所有Android工具"
-        
-    - name: Build APK
-      run: |
-        # 如果不存在buildozer.spec，则初始化
-        if [ ! -f "buildozer.spec" ]; then
-          buildozer init
-        fi
-        
-        # 构建APK
+        # 让Buildozer自己处理所有Android依赖
         buildozer -v android debug
       
     - name: Upload APK
