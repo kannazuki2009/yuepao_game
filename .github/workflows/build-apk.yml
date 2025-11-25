@@ -1,24 +1,112 @@
 name: Build APK
-on: [push]
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    
     steps:
-    - uses: actions/checkout@v4
-    - name: Setup environment
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: Install system dependencies
       run: |
-        sudo apt update
-        sudo apt install -y python3-pip openjdk-8-jdk
-        pip3 install buildozer
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          git \
+          python3 \
+          python3-pip \
+          openjdk-11-jdk \
+          zip \
+          unzip \
+          libncurses5 \
+          zlib1g-dev
+          
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install cython==0.29.33
+        pip install buildozer
+        pip install kivy[full]
+        
+    - name: Install Buildozer dependencies
+      run: |
+        pip install --user buildozer
+        export PATH="$HOME/.local/bin:$PATH"
+        buildozer --version
+        
+    - name: Initialize Buildozer
+      run: |
+        export PATH="$HOME/.local/bin:$PATH"
+        buildozer init || true
+        
+    - name: Create buildozer.spec with correct configuration
+      run: |
+        cat > buildozer.spec << 'EOF'
+[app]
+title = 月抛大作战
+package.name = yuepaogame
+package.domain = org.yuepao
+
+source.dir = .
+source.include_exts = py,png,jpg,kv,atlas,ttf
+
+version = 0.1
+requirements = python3,kivy,cython
+
+# Kivy launcher configuration
+fullscreen = 0
+orientation = portrait
+
+[buildozer]
+log_level = 2
+warn_on_root = 1
+
+[app]
+# Android specific
+android.permissions = INTERNET
+android.api = 30
+android.minapi = 21
+android.sdk = 20
+android.ndk = 23b
+android.private_storage = True
+android.accept_sdk_license = True
+
+# Presplash
+#presplash.filename = %(source.dir)s/assets/presplash.png
+#icon.filename = %(source.dir)s/assets/icon.png
+
+# Buildozer hooks
+#hooks = hook.py
+EOF
+        
     - name: Build APK
       run: |
-        # 设置允许root运行
-        export BUILDOZER_ALLOW_ROOT=1
-        buildozer init
-        yes | buildozer android debug  # 自动回答所有提示
+        export PATH="$HOME/.local/bin:$PATH"
+        export ANDROIDSDK="$HOME/.buildozer/android/platform/android-sdk"
+        export ANDROIDNDK="$HOME/.buildozer/android/platform/android-ndk-r23b"
+        mkdir -p ~/.buildozer/android/platform
+        
+        # 设置环境变量避免交互式提示
+        export CI=1
+        
+        # 使用更简单的构建命令
+        buildozer -v android debug
+        
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: app
+        name: yuepao-game-apk
         path: bin/*.apk
-        if-no-files-found: ignore
+        retention-days: 7
