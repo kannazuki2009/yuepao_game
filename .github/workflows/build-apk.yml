@@ -10,19 +10,20 @@ jobs:
     - name: Setup environment
       run: |
         sudo apt-get update
-        sudo apt-get install -y python3-pip openjdk-11-jdk zip unzip wget
+        sudo apt-get install -y python3-pip openjdk-11-jdk zip unzip wget git
         
-    - name: Install Buildozer
-      run: pip install buildozer
+    - name: Install ALL required Python packages
+      run: |
+        pip install buildozer
+        pip install cython==0.29.33
+        pip install kivy
         
     - name: Build APK
       run: |
-        buildozer android debug
-        echo "如果构建失败，请查看上面的错误日志"
+        buildozer -v android debug
         
     - name: Upload APK
       uses: actions/upload-artifact@v4
-      if: success()
       with:
         name: app
         path: bin/*.apk
