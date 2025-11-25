@@ -5,16 +5,24 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Build APK with Buildozer
-      uses: jhsu98m/buildozer-action@v1
-      with:
-        workdir: '.'
+    - uses: actions/checkout@v4
+    
+    - name: Setup environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y python3-pip openjdk-11-jdk zip unzip wget
+        
+    - name: Install Buildozer
+      run: pip install buildozer
+        
+    - name: Build APK
+      run: |
+        buildozer android debug
+        echo "如果构建失败，请查看上面的错误日志"
         
     - name: Upload APK
       uses: actions/upload-artifact@v4
+      if: success()
       with:
         name: app
         path: bin/*.apk
