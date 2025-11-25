@@ -3,16 +3,11 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: kivy/buildozer:latest
     steps:
     - uses: actions/checkout@v4
-    - name: Install everything
-      run: |
-        sudo apt update
-        sudo apt install -y python3-pip python3-venv openjdk-8-jdk
-        pip3 install --upgrade pip
-        pip3 install cython
-        pip3 install buildozer
-    - name: Build APK
+    - name: Build in Docker
       run: |
         buildozer init
         buildozer android debug
