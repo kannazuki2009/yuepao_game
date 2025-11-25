@@ -12,7 +12,7 @@ jobs:
       with:
         python-version: '3.9'
         
-    - name: Install ALL system dependencies
+    - name: Install system dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y \
@@ -32,33 +32,34 @@ jobs:
         pip install cython==0.29.33
         pip install kivy
         
-    - name: Install Android SDK and build tools
+    - name: Install Android SDK using alternative method
       run: |
-        # 下载命令行工具
+        # 使用更简单的方法安装 Android SDK
         wget -q https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip
         mkdir -p android-sdk
-        unzip -q commandlinetools-linux-8512546_latest.zip -d android-sdk
+        cd android-sdk
         
-        # 创建正确的目录结构
-        mkdir -p android-sdk/cmdline-tools/latest
-        mv android-sdk/cmdline-tools/* android-sdk/cmdline-tools/latest/
+        # 直接解压到当前目录，不进行复杂的目录移动
+        unzip -q ../commandlinetools-linux-8512546_latest.zip
         
         # 设置环境变量
-        export ANDROID_HOME=$PWD/android-sdk
-        export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
+        export ANDROID_HOME=$PWD
+        export PATH=$ANDROID_HOME/cmdline-tools/bin:$PATH
         
         # 接受许可证
-        yes | sdkmanager --licenses > /dev/null 2>&1 || true
+        yes | cmdline-tools/bin/sdkmanager --licenses > /dev/null 2>&1 || true
         
-        # 安装必要的 Android 组件（包含 aidl）
-        sdkmanager "platforms;android-30" "build-tools;30.0.3" "platform-tools"
+        # 安装必要的 Android 组件
+        cmdline-tools/bin/sdkmanager "platforms;android-30" "build-tools;30.0.3" "platform-tools"
         
-        # 将构建工具路径添加到 PATH（包含 aidl）
+        # 将构建工具路径添加到 PATH
         export PATH=$ANDROID_HOME/build-tools/30.0.3:$PATH
         
         # 保存环境变量
-        echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+        echo "ANDROID_HOME=$(pwd)" >> $GITHUB_ENV
         echo "PATH=$PATH" >> $GITHUB_ENV
+        
+        cd ..
         
     - name: Build APK
       run: |
