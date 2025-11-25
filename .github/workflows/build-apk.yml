@@ -12,7 +12,7 @@ jobs:
       with:
         python-version: '3.9'
         
-    - name: Install system dependencies
+    - name: Install ALL system dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y \
@@ -23,8 +23,16 @@ jobs:
           zip \
           unzip \
           wget \
-          libncurses5 \
-          zlib1g-dev
+          libncurses5-dev \
+          zlib1g-dev \
+          libffi-dev \
+          libssl-dev \
+          python3-dev \
+          autoconf \
+          automake \
+          libtool \
+          pkg-config \
+          cmake
         
     - name: Install Android SDK and NDK
       run: |
@@ -56,7 +64,7 @@ jobs:
         
         cd ..
         
-    - name: Install Buildozer and dependencies
+    - name: Install Buildozer and Python dependencies
       run: |
         pip install buildozer cython==0.29.33 kivy
         
