@@ -1,26 +1,18 @@
 [app]
-title = 月抛大作战
+title = YuepaoGame
 package.name = yuepaogame
-package.domain = org.yuepao
+package.domain = org.test
 
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,ttf
 
-version = 0.1
+version = 1.0
 requirements = python3,kivy
-
-fullscreen = 0
-orientation = portrait
 
 [buildozer]
 log_level = 2
-warn_on_root = 1
 
 [app]
 android.permissions = INTERNET
 android.api = 30
 android.minapi = 21
-android.sdk = 20
-android.ndk = 23b
-android.private_storage = True
-android.accept_sdk_license = True
