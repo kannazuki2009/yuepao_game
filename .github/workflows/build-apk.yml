@@ -1,51 +1,56 @@
 name: Build APK
-on: [push]
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
 
 jobs:
-  build:
+  build-apk:
     runs-on: ubuntu-20.04
     
     steps:
-    - name: Checkout code
+    - name: Checkout repository
       uses: actions/checkout@v4
       
-    - name: Setup Python
+    - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.9'
         
-    - name: Install dependencies for Ubuntu 20.04
+    - name: Install system dependencies
       run: |
         sudo apt-get update
-        # 基础构建工具
-        sudo apt-get install -y build-essential git python3-pip python3-dev
-        # Java
-        sudo apt-get install -y openjdk-11-jdk
-        # 压缩工具
-        sudo apt-get install -y zip unzip wget curl
-        # 库依赖 - Ubuntu 20.04 可用的包名
-        sudo apt-get install -y libncurses5-dev libncursesw5-dev
-        sudo apt-get install -y zlib1g-dev libffi-dev libssl-dev
-        sudo apt-get install -y autoconf automake libtool pkg-config cmake
-        # 32位支持
-        sudo apt-get install -y gcc-multilib g++-multilib
-        # Android构建需要的库
-        sudo apt-get install -y lib32z1 lib32stdc++6
+        sudo apt-get install -y \
+          build-essential \
+          git \
+          python3-pip \
+          python3-dev \
+          openjdk-11-jdk \
+          zip \
+          unzip \
+          wget \
+          curl \
+          libncurses5-dev \
+          zlib1g-dev \
+          libffi-dev \
+          libssl-dev
           
     - name: Install Python packages
       run: |
-        pip install --upgrade pip
+        python -m pip install --upgrade pip
         pip install buildozer
-        pip install Cython==0.29.33
+        pip install cython==0.29.33
         pip install kivy
         
     - name: Build APK with Buildozer
       run: |
-        # 让Buildozer自己处理所有Android依赖
         buildozer -v android debug
-      
-    - name: Upload APK
+        
+    - name: Upload APK artifact
       uses: actions/upload-artifact@v4
       with:
-        name: app
+        name: yuepao-game-apk
         path: bin/*.apk
+        retention-days: 7
