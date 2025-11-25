@@ -3,16 +3,19 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
-    container:
-      image: kivy/buildozer:latest
     steps:
     - uses: actions/checkout@v4
-    - name: Build in Docker
+    - name: Setup environment
       run: |
-        # 设置环境变量允许root运行
+        sudo apt update
+        sudo apt install -y python3-pip openjdk-8-jdk
+        pip3 install buildozer
+    - name: Build APK
+      run: |
+        # 设置允许root运行
         export BUILDOZER_ALLOW_ROOT=1
         buildozer init
-        buildozer android debug
+        yes | buildozer android debug  # 自动回答所有提示
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
