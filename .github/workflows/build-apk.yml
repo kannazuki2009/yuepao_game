@@ -4,66 +4,16 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: kivy/buildozer:latest
+      
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
-        
-    - name: Install system dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          build-essential \
-          git \
-          python3-pip \
-          openjdk-11-jdk \
-          zip \
-          unzip \
-          wget \
-          libncurses5-dev \
-          zlib1g-dev
-        
-    - name: Install Python dependencies
-      run: |
-        pip install buildozer
-        pip install cython==0.29.33
-        pip install kivy
-        
-    - name: Install Android SDK using alternative method
-      run: |
-        # 使用更简单的方法安装 Android SDK
-        wget -q https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip
-        mkdir -p android-sdk
-        cd android-sdk
-        
-        # 直接解压到当前目录，不进行复杂的目录移动
-        unzip -q ../commandlinetools-linux-8512546_latest.zip
-        
-        # 设置环境变量
-        export ANDROID_HOME=$PWD
-        export PATH=$ANDROID_HOME/cmdline-tools/bin:$PATH
-        
-        # 接受许可证
-        yes | cmdline-tools/bin/sdkmanager --licenses > /dev/null 2>&1 || true
-        
-        # 安装必要的 Android 组件
-        cmdline-tools/bin/sdkmanager "platforms;android-30" "build-tools;30.0.3" "platform-tools"
-        
-        # 将构建工具路径添加到 PATH
-        export PATH=$ANDROID_HOME/build-tools/30.0.3:$PATH
-        
-        # 保存环境变量
-        echo "ANDROID_HOME=$(pwd)" >> $GITHUB_ENV
-        echo "PATH=$PATH" >> $GITHUB_ENV
-        
-        cd ..
-        
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
     - name: Build APK
       run: |
-        buildozer -v android debug
+        buildozer android debug
         
     - name: Upload APK
       uses: actions/upload-artifact@v4

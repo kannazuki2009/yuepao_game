@@ -7,7 +7,7 @@ source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,ttf
 
 version = 0.1
-requirements = python3,kivy,cython
+requirements = python3,kivy
 
 orientation = portrait
 
