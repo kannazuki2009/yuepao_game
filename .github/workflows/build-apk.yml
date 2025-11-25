@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04  # 使用更稳定的 Ubuntu 20.04
     
     steps:
     - name: Checkout code
@@ -16,15 +16,69 @@ jobs:
     - name: Setup environment
       run: |
         sudo apt-get update
-        sudo apt-get install -y python3-pip python3-venv openjdk-8-jdk git zip unzip
-        pip3 install buildozer cython==0.29.19 kivy
+        sudo apt-get install -y \
+          python3-pip \
+          python3-venv \
+          build-essential \
+          git \
+          zip \
+          unzip \
+          openjdk-8-jdk \
+          autoconf \
+          libtool \
+          pkg-config \
+          zlib1g-dev \
+          libncurses5-dev \
+          libncursesw5-dev \
+          cmake \
+          libffi-dev \
+          libssl-dev
         
-    - name: Build with single process
+    - name: Install Python packages
       run: |
-        # 设置环境变量避免并发问题
-        export PYTHONOPTIMIZE=1
-        # 使用单进程构建
-        buildozer -v android debug --jobs 1
+        python3 -m pip install --upgrade pip
+        python3 -m pip install buildozer==1.4.0  # 使用稳定版本
+        python3 -m pip install cython==0.29.21   # 兼容版本
+        python3 -m pip install kivy[base]
+      
+    - name: Verify project structure
+      run: |
+        echo "=== 项目文件检查 ==="
+        ls -la
+        echo "=== Python 文件 ==="
+        find . -name "*.py" | head -10
+        echo "=== buildozer.spec 内容 ==="
+        cat buildozer.spec || echo "没有 buildozer.spec 文件"
+      
+    - name: Create buildozer.spec if missing
+      run: |
+        if [ ! -f buildozer.spec ]; then
+          echo "创建 buildozer.spec 文件"
+          buildozer init
+          # 添加基本配置
+          echo "[app]
+title = 月抛大作战
+package.name = yuepao
+package.domain = org.yourname
+source.dir = .
+source.include_exts = py,png,jpg,kv,atlas,txt
+version = 1.0
+requirements = python3,kivy,android
+orientation = portrait
+
+[buildozer]
+log_level = 2" > buildozer.spec
+        fi
+      
+    - name: Build APK (with timeout)
+      run: |
+        timeout 1800 buildozer -v android debug  # 30分钟超时
+      
+    - name: Check build results
+      run: |
+        echo "=== 构建结果检查 ==="
+        ls -la bin/ 2>/dev/null || echo "bin 目录不存在"
+        find . -name "*.apk" -type f | head -5 || echo "没有找到 APK 文件"
       
     - name: Upload APK
       uses: actions/upload-artifact@v4
@@ -32,3 +86,13 @@ jobs:
         name: 月抛大作战-APK
         path: bin/*.apk
         if-no-files-found: ignore
+        
+    - name: Upload build logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-logs
+        path: |
+          .buildozer
+          build.log
+        retention-days: 30
