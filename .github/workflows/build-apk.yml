@@ -14,28 +14,62 @@ jobs:
       with:
         python-version: '3.9'
         
-    - name: Install dependencies
+    - name: Install ALL possible dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y \
           build-essential \
           git \
           python3-pip \
+          python3-dev \
+          openjdk-11-jdk \
           openjdk-17-jdk \
           zip \
           unzip \
+          wget \
+          curl \
           libncurses5 \
-          zlib1g-dev
+          libncurses5-dev \
+          libncurses6 \
+          libncurses6-dev \
+          zlib1g-dev \
+          libffi-dev \
+          libssl-dev \
+          autoconf \
+          automake \
+          libtool \
+          pkg-config \
+          cmake \
+          ninja-build \
+          gcc-multilib \
+          g++-multilib \
+          libstdc++6 \
+          lib32stdc++6 \
+          lib32z1 \
+          lib32z1-dev
           
-    - name: Install Buildozer and Cython
+    - name: Install Python packages
       run: |
         pip install --upgrade pip
         pip install buildozer
         pip install Cython==0.29.33
+        pip install kivy[full]
+        
+    - name: Setup Android SDK and NDK
+      run: |
+        # 让Buildozer自己处理Android SDK和NDK的下载
+        # 我们只设置必要的环境变量
+        mkdir -p ~/.buildozer/android/platform/
+        echo "我们将让Buildozer自动下载所有Android工具"
         
     - name: Build APK
       run: |
-        buildozer init
+        # 如果不存在buildozer.spec，则初始化
+        if [ ! -f "buildozer.spec" ]; then
+          buildozer init
+        fi
+        
+        # 构建APK
         buildozer -v android debug
       
     - name: Upload APK
