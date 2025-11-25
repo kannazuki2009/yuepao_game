@@ -3,7 +3,7 @@ on: [push]
 
 jobs:
   build:
-    runs-on: ubuntu-20.04  # 使用更稳定的Ubuntu版本
+    runs-on: ubuntu-20.04
     
     steps:
     - name: Checkout code
@@ -14,7 +14,7 @@ jobs:
       with:
         python-version: '3.9'
         
-    - name: Install comprehensive dependencies
+    - name: Install dependencies for Ubuntu 20.04
       run: |
         sudo apt-get update
         # 基础构建工具
@@ -23,14 +23,13 @@ jobs:
         sudo apt-get install -y openjdk-11-jdk
         # 压缩工具
         sudo apt-get install -y zip unzip wget curl
-        # 库依赖 - 使用可用的包名
-        sudo apt-get install -y libncurses* zlib1g-dev libffi-dev libssl-dev
+        # 库依赖 - Ubuntu 20.04 可用的包名
+        sudo apt-get install -y libncurses5-dev libncursesw5-dev
+        sudo apt-get install -y zlib1g-dev libffi-dev libssl-dev
         sudo apt-get install -y autoconf automake libtool pkg-config cmake
         # 32位支持
         sudo apt-get install -y gcc-multilib g++-multilib
-        # 尝试安装其他可能的包
-        sudo apt-get install -y libc6-dev-i386 libstdc++6 libstdc++-10-dev
-        # 尝试安装Android构建可能需要的包
+        # Android构建需要的库
         sudo apt-get install -y lib32z1 lib32stdc++6
           
     - name: Install Python packages
@@ -38,7 +37,7 @@ jobs:
         pip install --upgrade pip
         pip install buildozer
         pip install Cython==0.29.33
-        pip install kivy[full]
+        pip install kivy
         
     - name: Build APK with Buildozer
       run: |
